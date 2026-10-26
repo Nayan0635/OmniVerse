@@ -53,7 +53,3 @@ def all_sources() -> dict[str, int]:
         counts[src] = counts.get(src, 0) + 1
     return counts
 
-
-# _client = chromadb.PersistentClient(path=config.CHROMA_PATH)
-# collection = _client.get_or_create_collection(name=config.COLLECTION_NAME)
-

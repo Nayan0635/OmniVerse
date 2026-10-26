@@ -1,6 +1,4 @@
-
 from core import embedder, llm, vector_store
-
 
 def answer(question: str, n_results: int = 5) -> str:
     q_emb = embedder.embed(question)

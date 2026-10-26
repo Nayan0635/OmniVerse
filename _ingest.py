@@ -1,6 +1,5 @@
 import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 from loaders import load_file
 from core import embedder, vector_store
 
@@ -15,7 +14,7 @@ def ingest(path: str):
         chunk_overlap=50,
     )
     chunks = splitter.split_text(text)
-    print(f"   Split into {len(chunks)} chunks.")
+    print(f"   Splited into {len(chunks)} chunks.")
 
     print("   Embedding chunks ...")
     embeddings = [embedder.embed(chunk) for chunk in chunks]
@@ -28,13 +27,13 @@ def ingest(path: str):
     vector_store.delete_source(source)
     vector_store.upsert_chunks(ids, embeddings, chunks, metadatas)
 
-    print(f"✅ Stored {len(chunks)} chunks from '{source}' in chromaDB")
+    print(f"✅ Stored {len(chunks)} chunks from '{source}' in database.")
 
 
 if __name__ == "__main__":
     while True:
-        path = input("\nEnter file path (or 'exit' to quit): ").strip()
-        if path.lower() == "exit":
+        path = input("\nEnter file path (or 'exit' to quit) :").strip()
+        if path.strip().lower() == "exit":
             print("Bye 👋")
             break
         if not path:
