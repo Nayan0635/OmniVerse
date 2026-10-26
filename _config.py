@@ -18,7 +18,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 embed_model = {
     "gemini": "gemini-embedding-001",
     # "gemini": "gemini-embedding-002",
-    # "nvidia": "nemotron-3-embed-1b",
+    # "nvidia": "nemotron-3.5-embed-1b",
     # "nvidia": "nemotron-3.5-embed-8b",
     "openai": "text-embedding-3-small",
 }[EMBED_PROVIDER]
