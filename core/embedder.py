@@ -8,11 +8,11 @@ _openai = OpenAI(api_key=_config.OPENAI_API_KEY) if _config.EMBED_PROVIDER == "o
 def embed(text: str) -> list[float]:
     if _config.EMBED_PROVIDER == "gemini":
         resp = _gemini.models.embed_content(
-            model=_config.EMBED_MODEL, contents=text
+            model=_config.EMBED_PROVIDER, contents=text
         )
         return resp.embeddings[0].values
     else:
         resp = _openai.embeddings.create(
-            model=_config.EMBED_MODEL, input=text
+            model=_config.EMBED_PROVIDER, input=text
         )
         return resp.data[0].embedding

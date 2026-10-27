@@ -20,12 +20,12 @@ def ask(context: str, question: str) -> str:
 
     if _config.CHAT_PROVIDER == "gemini":
         resp = _gemini.models.generate_content(
-            model=_config.CHAT_MODEL, contents=prompt
+            model=_config.CHAT_PROVIDER, contents=prompt
         )
         return resp.text
     else:
         resp = _openai.chat.completions.create(
-            model=_config.CHAT_MODEL,
+            model=_config.CHAT_PROVIDER,
             messages=[{"role": "user", "content": prompt}],
         )
         return resp.choices[0].message.content
