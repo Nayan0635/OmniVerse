@@ -1,8 +1,8 @@
 from google import genai
 from openai import OpenAI
 import _config
-_gemini = genai.Client(api_key=_config.GEMINI_API_KEY) if _config.CHAT_PROVIDER == "gemini" else None
-_openai = OpenAI(api_key=_config.OPENAI_API_KEY) if _config.CHAT_PROVIDER == "openai" else None
+_gemini = genai.Client(api_key=_config.GEMINI_API_KEY) if _config.LLM_PROVIDER == "gemini" else None
+_openai = OpenAI(api_key=_config.OPENAI_API_KEY) if _config.LLM_PROVIDER == "openai" else None
 
 
 def ask(context: str, question: str) -> str:
@@ -18,14 +18,14 @@ def ask(context: str, question: str) -> str:
     - If the answer is not present in the context, say "I don't know".
     """
 
-    if _config.CHAT_PROVIDER == "gemini":
+    if _config.LLM_PROVIDER == "gemini":
         resp = _gemini.models.generate_content(
-            model=_config.CHAT_PROVIDER, contents=prompt
+            model=_config.LLM_PROVIDER, contents=prompt
         )
         return resp.text
     else:
         resp = _openai.chat.completions.create(
-            model=_config.CHAT_PROVIDER,
+            model=_config.LLM_PROVIDER,
             messages=[{"role": "user", "content": prompt}],
         )
         return resp.choices[0].message.content

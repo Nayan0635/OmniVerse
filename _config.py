@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Select providers independently
-EMBED_PROVIDER = "gemini"
-CHAT_PROVIDER = "openai"
+LLM_PROVIDER = "openai"
+EMBEDDING_PROVIDER = "gemini"
 
 # API keys
 # NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
@@ -15,16 +15,16 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Embedding models
-embed_model = {
+EMBEDDING_MODELS = {
     "gemini": "gemini-embedding-001",
     # "gemini": "gemini-embedding-002",
     "nvidia": "nemotron-3.5-embed-1b",
     # "nvidia": "nemotron-3.5-embed-8b",
     "openai": "text-embedding-3-small",
-}[EMBED_PROVIDER]
+}[EMBEDDING_PROVIDER]
 
 # Chat models
-chat_model = {
+CHAT_MODELS = {
     "gemini": "gemini-3.1-flash-lite",
     "openai": "gpt-4.1-mini",
     "nvidia": "meta/muse-glimmer-30b",
@@ -34,7 +34,7 @@ chat_model = {
     "groq": "groq/compound-mini", # 21 Sep 2026
     "groq": "openai/gpt-oss-120b",
     "groq": "qwen/qwen3.8-27b"
-}[CHAT_PROVIDER]
+}[LLM_PROVIDER]
 
 # Database configuration
 CHROMA_PATH = "./database"
