@@ -1,8 +1,12 @@
 from google import genai
 from openai import OpenAI
 import _config
-_gemini = genai.Client(api_key=_config.GEMINI_API_KEY) if _config.LLM_PROVIDER == "gemini" else None
-_openai = OpenAI(api_key=_config.OPENAI_API_KEY) if _config.LLM_PROVIDER == "openai" else None
+
+_provider = _config.LLM_PROVIDER
+
+_gemini = genai.Client(api_key=_config.GEMINI_API_KEY) if _provider == "gemini" else None
+_openai = OpenAI(api_key=_config.OPENAI_API_KEY) if _provider == "openai" else None
+_nvidia = (OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=_config.NVIDIA_API_KEY) if _provider == "nvidia" else None)
 
 
 def ask(context: str, question: str) -> str:
@@ -18,14 +22,23 @@ def ask(context: str, question: str) -> str:
     - If the answer is not present in the context, say "I don't know".
     """
 
-    if _config.LLM_PROVIDER == "gemini":
+    if _provider == "gemini":
         resp = _gemini.models.generate_content(
-            model=_config.LLM_PROVIDER, contents=prompt
+            model=_config.CHAT_MODELS,
+            contents=prompt,
         )
         return resp.text
-    else:
-        resp = _openai.chat.completions.create(
-            model=_config.LLM_PROVIDER,
-            messages=[{"role": "user", "content": prompt}],
+
+    elif _provider in ("openai", "nvidia"):
+        client = _openai if _provider == "openai" else _nvidia
+
+        resp = client.chat.completions.create(
+            model=_config.CHAT_MODELS,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
         )
         return resp.choices[0].message.content
+
+    else:
+        raise ValueError(f"Unsupported LLM provider: {_provider}")

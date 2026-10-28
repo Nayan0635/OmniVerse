@@ -17,7 +17,7 @@ def ingest(path: str):
     print(f"   Splited into {len(chunks)} chunks.")
 
     print("   Embedding chunks ...")
-    embeddings = [embedder.embed(chunk) for chunk in chunks]
+    embeddings = [embedder.embed(chunk, input_type="passage")for chunk in chunks]
 
     source = os.path.basename(path)
     ids       = [f"{source}_{i}" for i in range(len(chunks))]
