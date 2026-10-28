@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from google import genai
 from openai import OpenAI
 
-env_path = Path(__file__).resolve().parent.parent / ".env"
+env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(env_path)
 
 # Change these two values to test another model

@@ -8,8 +8,8 @@ env_path = Path(__file__).resolve().parent / ".env"
 load_dotenv(env_path)
 
 # Change these two values to test another model
-PROVIDER = "gemini"
-MODEL = "gemini-3.1-flash-lite"
+PROVIDER = "nvidia"
+MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
 
 prompt = "Reply with exactly: Model is working!"
 
