@@ -15,7 +15,7 @@ Your file
    ↓
 Load & extract text  (loaders/)
    ↓
-Split into chunks    (langchain splitter)
+Split into chunks    (splitter)
    ↓
 Embed each chunk     (Gemini / OpenAI)
    ↓
