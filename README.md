@@ -4,6 +4,8 @@ A local RAG (Retrieval-Augmented Generation) agent that lets you ask questions a
 
 **Supported formats:** TXT · PDF · DOCX · Excel (`.xlsx`, `.xls`) · CSV
 
+**LLM / Embedding providers:** Gemini · OpenAI · NVIDIA (wired into the main pipeline). Groq has an API key slot in `_config.py` but is **not yet connected** to `core/llm.py` or `core/embedder.py`.
+
 ---
 
 ## How It Works
@@ -13,7 +15,7 @@ Your file
    ↓
 Load & extract text  (loaders/)
    ↓
-Split into chunks    (splitter)
+Split into chunks    (langchain splitter)
    ↓
 Embed each chunk     (Gemini / OpenAI)
    ↓
@@ -28,7 +30,7 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 
 ## Project Structure
 
-```text
+```structure
 .
 ├── _config.py          # Provider, model names, API keys, DB path
 ├── _ingest.py          # Ingest a file into ChromaDB
@@ -41,14 +43,19 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 │   ├── rag.py          # Full pipeline: embed question → retrieve → ask LLM
 │   └── vector_store.py # ChromaDB operations: add, query, delete, list
 │
-└── loaders/
-    ├── __init__.py     # Maps file extensions to loader functions
-    ├── txt_loader.py
-    ├── pdf_loader.py
-    ├── docx_loader.py
-    ├── csv_loader.py
-    └── excel_loader.py
+├── loaders/
+│   ├── __init__.py     # Maps file extensions to loader functions
+│   ├── txt_loader.py
+│   ├── pdf_loader.py
+│   ├── docx_loader.py
+│   ├── csv_loader.py
+│   └── excel_loader.py
+│
+├── llm_models.py        # Standalone: quick test if a single chat model responds
+└── embedding_models.py  # Standalone: quick test if a single embedding model responds
 ```
+
+> `llm_models.py` and `embedding_models.py` are **not part of the main pipeline**. They're small, one-off scripts for manually sanity-checking a provider/model combo before wiring it into `_config.py`. Edit the `PROVIDER` and `MODEL` variables at the top of each file and run it directly, e.g. `python llm_models.py`.
 
 ---
 
@@ -65,18 +72,23 @@ pip install chromadb langchain-text-splitters pypdf python-docx \
 
 ```env
 GEMINI_API_KEY=your_gemini_key_here
-OPENAI_API_KEY=your_openai_key_here   # only needed if using OpenAI
+OPENAI_API_KEY=your_openai_key_here    # only needed if using OpenAI
+NVIDIA_API_KEY=your_nvidia_key_here    # only needed if using NVIDIA
+GROQ_API_KEY=your_groq_key_here        # loaded, but not yet wired into the pipeline
 ```
 
-### 3. Choose your provider
+### 3. Choose your providers
 
-Open `_config.py` and set `PROVIDER`:
+Open `_config.py`. Chat and embedding providers are set **independently**:
 
 ```python
-PROVIDER = "gemini"   # or "openai"
+LLM_PROVIDER = "nvidia"        # "gemini" | "openai" | "nvidia"
+EMBEDDING_PROVIDER = "gemini"  # "gemini" | "openai" | "nvidia"
 ```
 
-That single line controls which API is used for both embedding and chat.
+This lets you, for example, use NVIDIA for chat while still embedding with Gemini.
+
+> ⚠️ `"groq"` is **not a valid value** for either setting yet — `GROQ_API_KEY` is loaded but there's no Groq branch in `core/llm.py` or `core/embedder.py`. Setting either provider to `"groq"` will raise an error.
 
 ---
 
@@ -84,11 +96,14 @@ That single line controls which API is used for both embedding and chat.
 
 | Setting | Default | Description |
 |---|---|---|
-| `PROVIDER` | `"gemini"` | Which API to use: `"gemini"` or `"openai"` |
-| `EMBED_MODEL` | `gemini-embedding-001` / `text-embedding-3-small` | Embedding model, chosen automatically by provider |
-| `CHAT_MODEL` | `gemini-3.1-flash-lite` / `gpt-4.1-mini` | LLM for answering questions |
+| `LLM_PROVIDER` | `"nvidia"` | Provider used for answering questions: `"gemini"`, `"openai"`, or `"nvidia"` |
+| `EMBEDDING_PROVIDER` | `"gemini"` | Provider used for embeddings: `"gemini"`, `"openai"`, or `"nvidia"` |
+| `EMBEDDING_MODELS` | per-provider dict | Embedding model, selected automatically from `EMBEDDING_PROVIDER` |
+| `CHAT_MODELS` | per-provider dict | Chat model, selected automatically from `LLM_PROVIDER` |
 | `CHROMA_PATH` | `./database` | Where ChromaDB stores data on disk |
 | `COLLECTION_NAME` | `"documents"` | ChromaDB collection name |
+
+Both `EMBEDDING_MODELS` and `CHAT_MODELS` are dictionaries keyed by provider name — edit the value for your chosen provider directly in `_config.py` to change the specific model used.
 
 ---
 
@@ -111,7 +126,7 @@ Loading documents/report.pdf ...
 ✅ Stored 38 chunks from 'report.pdf' in database.
 ```
 
-Re-ingesting the same file automatically replacest he old version.
+Re-ingesting the same file automatically replaces the old version.
 
 ### Ask questions
 
