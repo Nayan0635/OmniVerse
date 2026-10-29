@@ -5,10 +5,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from loaders import load_file
 from core import embedder, vector_store
 
-DAILY_BUDGET = 900       # Leave headroom under the assumed 1K requests/day quota
+DAILY_BUDGET = 900       # 1K requests/day quota
 MAX_CHUNK = 6000         # Characters, roughly 1500 tokens for typical English text
-CHUNK_OVERLAP = 600      # Preserve context between adjacent chunks
-TPM_LIMIT = 30_000       # Set this to your actual provider quota
+CHUNK_OVERLAP = 600
+TPM_LIMIT = 30_000
 
 
 def build_chunks(text: str):

@@ -26,13 +26,14 @@ EMBEDDING_MODELS = {
 # Chat models
 CHAT_MODELS = {
     "gemini": "gemini-3.1-flash-lite",
+    "gemini": "gemini-3.6-flash-lite",
     "nvidia": "nvidia/nemotron-3.5-super-vl-120b-a12b",
-    "nvidia": "meta/muse-glimmer-30b",
-    "nvidia": "z-ai/glm-5.3",
-    "nvidia": "nvidia/nemotron-3-ultra-550b-a55b",
-    "groq": "groq/compound-mini", # 21 Sep 2026
+    # "nvidia": "meta/muse-glimmer-30b",
+    # "nvidia": "z-ai/glm-5.3",
+    # "nvidia": "nvidia/nemotron-3-ultra-550b-a55b",
+    # "groq": "groq/compound-mini", # 21 Sep 2026
     "groq": "openai/gpt-oss-120b",
-    "groq": "qwen/qwen3.8-27b",
+    # "groq": "qwen/qwen3.8-27b",
     "openai": "gpt-4.1-mini"
 }[LLM_PROVIDER]
 

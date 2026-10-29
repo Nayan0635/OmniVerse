@@ -17,7 +17,7 @@ Load & extract text  (loaders/)
    ↓
 Split into chunks    (splitter)
    ↓
-Embed each chunk     (Gemini / OpenAI)
+Embed each chunk     
    ↓
 Store in ChromaDB    (core/vector_store.py)
    ↓
@@ -32,10 +32,9 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 
 ```structure
 .
-├── _config.py          # Provider, model names, API keys, DB path
+├── _config.py          # choose Provider, model names, API keys, DB path
 ├── _ingest.py          # Ingest a file into ChromaDB
 ├── _agent.py           # Interactive Q&A loop
-├── show_files.py       # List all ingested files and their chunk counts
 │
 ├── core/
 │   ├── embedder.py     # Text → embedding vector (Gemini or OpenAI)
@@ -50,7 +49,7 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 │   ├── docx_loader.py
 │   ├── csv_loader.py
 │   └── excel_loader.py
-│
+├── show_files.py        # Standalone: list all ingested files and their chunk counts
 ├── llm_models.py        # Standalone: quick test if a single chat model responds
 └── embedding_models.py  # Standalone: quick test if a single embedding model responds
 ```
@@ -88,7 +87,7 @@ EMBEDDING_PROVIDER = "gemini"  # "gemini" | "openai" | "nvidia"
 
 This lets you, for example, use NVIDIA for chat while still embedding with Gemini.
 
-> ⚠️ `"groq"` is **not a valid value** for either setting yet — `GROQ_API_KEY` is loaded but there's no Groq branch in `core/llm.py` or `core/embedder.py`. Setting either provider to `"groq"` will raise an error.
+> ⚠️ `"groq"` is **not a valid value** for either setting yet — `GROQ_API_KEY` is loaded but there's no Groq branch in `core/llm.py` or `core/embedder.py`. Setting either provider to `"groq"` will raise an error for now.
 
 ---
 
@@ -101,7 +100,7 @@ This lets you, for example, use NVIDIA for chat while still embedding with Gemin
 | `EMBEDDING_MODELS` | per-provider dict | Embedding model, selected automatically from `EMBEDDING_PROVIDER` |
 | `CHAT_MODELS` | per-provider dict | Chat model, selected automatically from `LLM_PROVIDER` |
 | `CHROMA_PATH` | `./database` | Where ChromaDB stores data on disk |
-| `COLLECTION_NAME` | `"documents"` | ChromaDB collection name |
+| `COLLECTION_NAME` | `"documents"` | files collection name |
 
 Both `EMBEDDING_MODELS` and `CHAT_MODELS` are dictionaries keyed by provider name — edit the value for your chosen provider directly in `_config.py` to change the specific model used.
 
@@ -176,6 +175,6 @@ python show_files.py
 ## Notes
 
 - The vector database persists on disk at `./database`. You do not need to re-ingest files between sessions.
-- Chunk size is 500 characters with a 50-character overlap (configured in `_ingest.py`).
+- Chunk size is 6000 characters with a 10% character overlap (configured in `_ingest.py`).
 - All files are chunked and embedded uniformly regardless of format.
 - The agent has no memory between questions; each query is independent.
