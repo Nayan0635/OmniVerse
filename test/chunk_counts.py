@@ -1,6 +1,10 @@
 import math
 import statistics
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from loaders import load_file
 
 # --- keep these the same as in ingest.py ---

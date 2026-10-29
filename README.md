@@ -32,12 +32,11 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 
 ```structure
 .
-├── _config.py          # choose Provider, model names, API keys, DB path
-├── _ingest.py          # Ingest a file into ChromaDB
-├── _agent.py           # Interactive Q&A loop
-│
+├── database/           # ChromaDB file embeddings will be stored here
+├── documents/          # move your files here
+|
 ├── core/
-│   ├── embedder.py     # Text → embedding vector (Gemini or OpenAI)
+│   ├── embedder.py     # Text → embedding vector (Gemini or OpenAI or NVIDIA)
 │   ├── llm.py          # Send context + question to LLM, return answer
 │   ├── rag.py          # Full pipeline: embed question → retrieve → ask LLM
 │   └── vector_store.py # ChromaDB operations: add, query, delete, list
@@ -49,6 +48,12 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 │   ├── docx_loader.py
 │   ├── csv_loader.py
 │   └── excel_loader.py
+|
+├── _config.py          # choose Provider, model names, API keys, DB path
+├── _ingest.py          # Ingest a file into ChromaDB
+├── _agent.py           # Interactive Q&A loop
+│
+├── chunk_counts.py      # Standalone: precheck if embedding possible or not with daily limit
 ├── show_files.py        # Standalone: list all ingested files and their chunk counts
 ├── llm_models.py        # Standalone: quick test if a single chat model responds
 └── embedding_models.py  # Standalone: quick test if a single embedding model responds

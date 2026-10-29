@@ -2,7 +2,7 @@
 from pathlib import Path
 import chromadb
 
-DATABASE_PATH = Path(__file__).resolve().parent / "database"
+DATABASE_PATH = Path(__file__).resolve().parent.parent / "database"
 COLLECTION_NAME = "documents"
 
 def main():
