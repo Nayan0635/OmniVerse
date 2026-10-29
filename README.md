@@ -49,14 +49,16 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 │   ├── csv_loader.py
 │   └── excel_loader.py
 |
+├── test/
+│   ├── chunk_counts.py      # Standalone: precheck if embedding possible or not with daily limit
+│   ├── show_files.py        # Standalone: list all ingested files and their chunk counts
+│   ├── llm_models.py        # Standalone: quick test if a single chat model responds
+│   ├── embedding_models.py  # Standalone: quick test if a single embedding model responds
+|
 ├── _config.py          # choose Provider, model names, API keys, DB path
 ├── _ingest.py          # Ingest a file into ChromaDB
 ├── _agent.py           # Interactive Q&A loop
 │
-├── chunk_counts.py      # Standalone: precheck if embedding possible or not with daily limit
-├── show_files.py        # Standalone: list all ingested files and their chunk counts
-├── llm_models.py        # Standalone: quick test if a single chat model responds
-└── embedding_models.py  # Standalone: quick test if a single embedding model responds
 ```
 
 > `llm_models.py` and `embedding_models.py` are **not part of the main pipeline**. They're small, one-off scripts for manually sanity-checking a provider/model combo before wiring it into `_config.py`. Edit the `PROVIDER` and `MODEL` variables at the top of each file and run it directly, e.g. `python llm_models.py`.
