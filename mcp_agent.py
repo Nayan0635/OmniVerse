@@ -1,13 +1,3 @@
-"""
-MCP-powered Q&A agent for OmniVerse.
-
-Launches mcp_server.py over stdio, gives its tools to the chat LLM
-configured in _config.py, and lets the model choose which tool to call.
-Tool results are sent back to the model so it can write the final reply
-(needed for search_documents, which returns raw chunks).
-
-    python mcp_agent.py
-"""
 import asyncio
 import json
 
@@ -29,7 +19,7 @@ elif _config.LLM_PROVIDER == "openai":
     client = OpenAI(api_key=_config.OPENAI_API_KEY)
 else:
     raise ValueError(
-        f"mcp_agent.py supports LLM_PROVIDER 'nvidia' or 'openai', got {_config.LLM_PROVIDER!r}"
+        f"don't support {_config.LLM_PROVIDER!r}"
     )
 
 server = StdioServerParameters(command="python", args=["mcp_server.py"])
