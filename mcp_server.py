@@ -1,5 +1,4 @@
 # import json
-
 from mcp.server import MCPServer
 from core import embedder, rag, vector_store
 
