@@ -1,6 +1,6 @@
 # Document Analysis Agent
 
-A local RAG (Retrieval-Augmented Generation) agent that lets you ask questions about your own documents. Ingest files once — then query them in plain English.
+A local RAG (Retrieval-Augmented Generation) agent that lets you ask questions about your own documents. Ingest files once — then query them in plain English, either through a direct CLI agent or through an MCP server/agent pair.
 
 **Supported formats:** TXT · PDF · DOCX · Excel (`.xlsx`, `.xls`) · CSV
 
@@ -17,14 +17,19 @@ Load & extract text  (loaders/)
    ↓
 Split into chunks    (splitter)
    ↓
-Embed each chunk     
+Embed each chunk
    ↓
 Store in ChromaDB    (core/vector_store.py)
    ↓
 Ask a question
    ↓
-Embed the question → find top-5 similar chunks → send to LLM → answer with citations
+Embed the question → find top-n similar chunks → send to LLM → answer with citations
 ```
+
+You can ask questions two ways:
+
+1. **Direct CLI** (`_agent.py`) — calls `core/rag.py` in-process.
+2. **MCP server + agent** (`mcp_server.py` + `mcp_agent.py`) — exposes the RAG pipeline as MCP tools (`ask_documents`, `search_documents`, `list_documents`) that a tool-calling LLM drives over stdio.
 
 ---
 
@@ -32,17 +37,17 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 
 ```structure
 .
-├── database/           # ChromaDB file embeddings will be stored here
-├── documents/          # move your files here
+├── database/            # ChromaDB file embeddings will be stored here
+├── documents/           # move your files here
 |
 ├── core/
-│   ├── embedder.py     # Text → embedding vector (Gemini or OpenAI or NVIDIA)
-│   ├── llm.py          # Send context + question to LLM, return answer
-│   ├── rag.py          # Full pipeline: embed question → retrieve → ask LLM
-│   └── vector_store.py # ChromaDB operations: add, query, delete, list
+│   ├── embedder.py      # Text → embedding vector (Gemini or OpenAI or NVIDIA)
+│   ├── llm.py           # Send context + question to LLM, return answer
+│   ├── rag.py           # Full pipeline: embed question → retrieve → ask LLM
+│   └── vector_store.py  # ChromaDB operations: add, query, delete, list, upsert
 │
 ├── loaders/
-│   ├── __init__.py     # Maps file extensions to loader functions
+│   ├── __init__.py      # Maps file extensions to loader functions
 │   ├── txt_loader.py
 │   ├── pdf_loader.py
 │   ├── docx_loader.py
@@ -50,18 +55,20 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 │   └── excel_loader.py
 |
 ├── test/
-│   ├── chunk_counts.py      # Standalone: precheck if embedding possible or not with daily limit
+│   ├── chunk_counts.py      # Standalone: precheck if embedding possible within daily limit
 │   ├── show_files.py        # Standalone: list all ingested files and their chunk counts
 │   ├── llm_models.py        # Standalone: quick test if a single chat model responds
 │   ├── embedding_models.py  # Standalone: quick test if a single embedding model responds
 |
-├── _config.py          # choose Provider, model names, API keys, DB path
-├── _ingest.py          # Ingest a file into ChromaDB
-├── _agent.py           # Interactive Q&A loop
+├── _config.py           # choose provider, model names, API keys, DB path
+├── _ingest.py           # Ingest a file into ChromaDB
+├── _agent.py            # Interactive Q&A loop (direct, no MCP)
+├── mcp_server.py         # Exposes the RAG pipeline as MCP tools
+├── mcp_agent.py          # Interactive Q&A loop that talks to mcp_server.py over MCP
 │
 ```
 
-> `llm_models.py` and `embedding_models.py` are **not part of the main pipeline**. They're small, one-off scripts for manually sanity-checking a provider/model combo before wiring it into `_config.py`. Edit the `PROVIDER` and `MODEL` variables at the top of each file and run it directly, e.g. `python llm_models.py`.
+> `test/llm_models.py` and `test/embedding_models.py` are **not part of the main pipeline**. They're small, one-off scripts for manually sanity-checking a provider/model combo before wiring it into `_config.py`. Edit the `PROVIDER` and `MODEL` variables at the top of each file and run it directly, e.g. `python test/llm_models.py`.
 
 ---
 
@@ -71,7 +78,7 @@ Embed the question → find top-5 similar chunks → send to LLM → answer with
 
 ```bash
 pip install chromadb langchain-text-splitters pypdf python-docx \
-            pandas openpyxl google-genai openai python-dotenv
+            pandas openpyxl google-genai openai python-dotenv mcp
 ```
 
 ### 2. Create a `.env` file
@@ -107,7 +114,7 @@ This lets you, for example, use NVIDIA for chat while still embedding with Gemin
 | `EMBEDDING_MODELS` | per-provider dict | Embedding model, selected automatically from `EMBEDDING_PROVIDER` |
 | `CHAT_MODELS` | per-provider dict | Chat model, selected automatically from `LLM_PROVIDER` |
 | `CHROMA_PATH` | `./database` | Where ChromaDB stores data on disk |
-| `COLLECTION_NAME` | `"documents"` | files collection name |
+| `COLLECTION_NAME` | `"documents"` | Files collection name |
 
 Both `EMBEDDING_MODELS` and `CHAT_MODELS` are dictionaries keyed by provider name — edit the value for your chosen provider directly in `_config.py` to change the specific model used.
 
@@ -127,14 +134,15 @@ You will be prompted to enter a file path. Enter one path at a time; type `exit`
 Enter file path (or 'exit' to quit): documents/report.pdf
 Loading documents/report.pdf ...
    Extracted 14320 characters.
-   Splited into 38 chunks.
+   Split into 38 chunks (chunk_size=6000, overlap=600).
    Embedding chunks ...
+   38/38
 ✅ Stored 38 chunks from 'report.pdf' in database.
 ```
 
-Re-ingesting the same file automatically replaces the old version.
+Re-ingesting the same file automatically replaces the old version. If a file would need more embedding requests than `DAILY_BUDGET` (900), ingestion stops before calling the embedding API and the vector store is left untouched — use `test/chunk_counts.py` to check a file beforehand.
 
-### Ask questions
+### Ask questions — direct CLI
 
 ```bash
 python _agent.py
@@ -149,12 +157,44 @@ Agent:
 The report identified three main findings ... [report.pdf § 4]
 ```
 
+### Ask questions — via MCP
+
+Run the MCP agent, which spawns `mcp_server.py` over stdio and drives it with your configured `LLM_PROVIDER`:
+
+```bash
+python mcp_agent.py
+```
+
+```text
+🔌 Connected to MCP server. Available tools:
+   - ask_documents
+   - search_documents
+   - list_documents
+
+🤖 Type 'exit' to quit.
+
+Ask? What files do I have?
+   → tool: list_documents({})
+
+Agent:
+- report.pdf: 38 chunks
+- sales_data.xlsx: 12 chunks
+```
+
+MCP tools exposed by `mcp_server.py`:
+
+| Tool | Purpose |
+|---|---|
+| `ask_documents(question)` | Runs the full RAG pipeline and returns a finished, cited answer |
+| `search_documents(question, n_results=5)` | Returns raw matching chunks without generating an answer |
+| `list_documents()` | Lists every ingested file and its chunk count |
+
 Answers include citations in the format `[filename § chunk_number]` so you know exactly where each fact came from.
 
 ### List ingested files
 
 ```bash
-python show_files.py
+python test/show_files.py
 ```
 
 ```text
@@ -167,12 +207,20 @@ python show_files.py
    3 files, 55 total chunks
 ```
 
+### Check if a file fits your daily quota before ingesting
+
+```bash
+python test/chunk_counts.py
+```
+
+Enter a file path to see the projected chunk count, estimated token usage, and whether it fits inside `DAILY_BUDGET` in one day.
+
 ---
 
 ## How Answers Are Generated
 
 1. Your question is embedded into a vector using the same model used during ingestion.
-2. ChromaDB finds the 5 most semantically similar chunks from all ingested documents.
+2. ChromaDB finds the top-n most semantically similar chunks from all ingested documents (default 5).
 3. Those chunks — tagged with their source file and chunk index — are passed to the LLM as context.
 4. The LLM is instructed to answer only from the provided context and cite every fact.
 5. If no relevant chunks exist, it replies: *"I don't know."*
@@ -182,6 +230,6 @@ python show_files.py
 ## Notes
 
 - The vector database persists on disk at `./database`. You do not need to re-ingest files between sessions.
-- Chunk size is 6000 characters with a 10% character overlap (configured in `_ingest.py`).
+- Chunk size during ingestion is 6,000 characters with a 600-character (10%) overlap, configured in `_ingest.py`.
 - All files are chunked and embedded uniformly regardless of format.
-- The agent has no memory between questions; each query is independent.
+- The direct agent (`_agent.py`) and the RAG pipeline (`core/rag.py`) have no memory between questions; each query is independent. The MCP agent (`mcp_agent.py`) keeps conversation history only within a single question's tool-calling loop (capped at `MAX_STEPS`), not across questions.
