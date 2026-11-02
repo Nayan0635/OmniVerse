@@ -1,39 +1,43 @@
-from google import genai
-from openai import OpenAI
 import _config
 
 _provider = _config.EMBEDDING_PROVIDER
 
-_gemini = genai.Client(api_key=_config.GEMINI_API_KEY) if _provider == "gemini" else None
-_openai = OpenAI(api_key=_config.OPENAI_API_KEY) if _provider == "openai" else None
-_nvidia = (OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=_config.NVIDIA_API_KEY) if _provider == "nvidia" else None)
+if _provider == "gemini":
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    _embedder = GoogleGenerativeAIEmbeddings(
+        model=_config.EMBEDDING_MODELS,
+        google_api_key=_config.GEMINI_API_KEY,
+    )
+elif _provider == "nvidia":
+    from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
+    # Two instances: one for queries, one for passages (documents).
+    # NVIDIA requires the input_type distinction for optimal retrieval.
+    _embedder_query = NVIDIAEmbeddings(
+        model=_config.EMBEDDING_MODELS,
+        api_key=_config.NVIDIA_API_KEY,
+        input_type="query",
+    )
+    _embedder_passage = NVIDIAEmbeddings(
+        model=_config.EMBEDDING_MODELS,
+        api_key=_config.NVIDIA_API_KEY,
+        input_type="passage",
+    )
+elif _provider == "openai":
+    from langchain_openai import OpenAIEmbeddings
+    _embedder = OpenAIEmbeddings(
+        model=_config.EMBEDDING_MODELS,
+        api_key=_config.OPENAI_API_KEY,
+    )
+else:
+    raise ValueError(f"Unsupported embedding provider: {_provider}")
+
 
 def embed(text: str, input_type: str = "query") -> list[float]:
-    if _provider == "gemini":
-        resp = _gemini.models.embed_content(
-            model=_config.EMBEDDING_MODELS, contents=text
-        )
-        return resp.embeddings[0].values
-    
-    elif _provider == "openai":
-        resp = _openai.embeddings.create(
-            model=_config.EMBEDDING_MODELS,
-            input=text,
-        )
-        return resp.data[0].embedding
+    if _provider == "nvidia":
+        if input_type == "passage":
+            return _embedder_passage.embed_documents([text])[0]
+        return _embedder_query.embed_query(text)
 
-    elif _provider == "nvidia":
-        resp = _nvidia.embeddings.create(
-            model=_config.EMBEDDING_MODELS,
-            input=[text],
-            extra_body={"input_type": input_type},
-        )
-        return resp.data[0].embedding
-
-    else:
-        raise ValueError(
-            f"Unsupported embedding provider: {_provider}"
-        )
-
-    # if not embedding:
-    #     raise ValueError("Embedding provider returned an empty vector")
+    if input_type == "passage":
+        return _embedder.embed_documents([text])[0]
+    return _embedder.embed_query(text)
