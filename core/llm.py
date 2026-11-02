@@ -1,23 +1,24 @@
 import _config
 
 _provider = _config.LLM_PROVIDER
+_model = _config.CHAT_MODELS
 
 if _provider == "gemini":
     from langchain_google_genai import ChatGoogleGenerativeAI
     _llm = ChatGoogleGenerativeAI(
-        model=_config.CHAT_MODELS,
+        model=_model,
         google_api_key=_config.GEMINI_API_KEY,
     )
 elif _provider == "nvidia":
     from langchain_nvidia_ai_endpoints import ChatNVIDIA
     _llm = ChatNVIDIA(
-        model=_config.CHAT_MODELS,
+        model=_model,
         api_key=_config.NVIDIA_API_KEY,
     )
 elif _provider == "openai":
     from langchain_openai import ChatOpenAI
     _llm = ChatOpenAI(
-        model=_config.CHAT_MODELS,
+        model=_model,
         api_key=_config.OPENAI_API_KEY,
     )
 else:
