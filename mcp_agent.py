@@ -1,26 +1,30 @@
 import asyncio
 import json
 
-from openai import OpenAI
-from google import genai
 from mcp import Client, StdioServerParameters
 
 import _config
 
-if _config.LLM_PROVIDER == "nvidia":
-    client = OpenAI(
-        base_url="https://integrate.api.nvidia.com/v1",
+if _config.LLM_PROVIDER == "gemini":
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    llm = ChatGoogleGenerativeAI(
+        model=_config.CHAT_MODELS,
+        google_api_key=_config.GEMINI_API_KEY,
+    )
+elif _config.LLM_PROVIDER == "nvidia":
+    from langchain_nvidia_ai_endpoints import ChatNVIDIA
+    llm = ChatNVIDIA(
+        model=_config.CHAT_MODELS,
         api_key=_config.NVIDIA_API_KEY,
     )
-elif _config.LLM_PROVIDER == "gemini":
-    client = genai.Client(api_key=_config.GEMINI_API_KEY)
-
 elif _config.LLM_PROVIDER == "openai":
-    client = OpenAI(api_key=_config.OPENAI_API_KEY)
-else:
-    raise ValueError(
-        f"don't support {_config.LLM_PROVIDER!r}"
+    from langchain_openai import ChatOpenAI
+    llm = ChatOpenAI(
+        model=_config.CHAT_MODELS,
+        api_key=_config.OPENAI_API_KEY,
     )
+else:
+    raise ValueError(f"don't support {_config.LLM_PROVIDER!r}")
 
 server = StdioServerParameters(command="python", args=["mcp_server.py"])
 
@@ -52,6 +56,8 @@ async def run():
                 },
             })
 
+        client = llm.bind_tools(openai_tools)
+
         print("\n🤖 Type 'exit' to quit.")
         while True:
             user_input = input("\nAsk? ")
@@ -66,25 +72,20 @@ async def run():
 
             final = None
             for _ in range(MAX_STEPS):
-                resp = client.chat.completions.create(
-                    model=_config.CHAT_MODELS,
-                    messages=messages,
-                    tools=openai_tools,
-                )
-                msg = resp.choices[0].message
+                resp = client.invoke(messages)
 
-                if not msg.tool_calls:
-                    final = msg.content
+                if not resp.tool_calls:
+                    final = resp.content
                     break
 
-                messages.append(msg.model_dump(exclude_none=True))
-                for call in msg.tool_calls:
-                    args = json.loads(call.function.arguments or "{}")
-                    print(f"   → tool: {call.function.name}({args})")
-                    result = await session.call_tool(call.function.name, args)
+                messages.append(resp)
+                for call in resp.tool_calls:
+                    args = call["args"]
+                    print(f"   → tool: {call['name']}({args})")
+                    result = await session.call_tool(call["name"], args)
                     messages.append({
                         "role": "tool",
-                        "tool_call_id": call.id,
+                        "tool_call_id": call["id"],
                         "content": result.content[0].text,
                     })
 
